@@ -1,0 +1,8 @@
+volumes/etcd/member
+volumes/*
+!volumes/minio_data
+__pycache__/
+*.pyc
+*.pyo
+*.pkl
+*.log

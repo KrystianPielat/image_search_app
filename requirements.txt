@@ -1,0 +1,10 @@
+torch
+pillow
+ipython
+tqdm
+pymilvus
+python-dotenv
+streamlit
+pyyaml
+colorlog
+sentence-transformers

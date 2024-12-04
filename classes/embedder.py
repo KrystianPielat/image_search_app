@@ -3,7 +3,7 @@ import torch
 import numpy as np
 from tqdm.autonotebook import tqdm
 from torch import Tensor
-from typing import List, Union
+from typing import List, Union, Optional, Literal
 
 
 def normalize_embeddings(q: Tensor) -> Tensor:
@@ -32,7 +32,7 @@ class Embedder:
         _ml_model (SentenceTransformer): The model used for embedding sentences.
     """
 
-    def __init__(self, base_model: SentenceTransformer, ml_model: SentenceTransformer):
+    def __init__(self, base_model: SentenceTransformer, ml_model: SentenceTransformer, device: Optional[Literal['cpu', 'cuda']] = None):
         """
         Initializes the Embedder with the specified models.
 
@@ -40,9 +40,12 @@ class Embedder:
             base_model (SentenceTransformer): A pre-trained SentenceTransformer model for images.
             ml_model (SentenceTransformer): A pre-trained SentenceTransformer model for sentences.
         """
-        self._device = (
-            torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-        )
+        if device is not None:
+            self._device = device
+        else:
+            self._device = (
+                torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+            )
 
         self._base_model = base_model.to(self._device)
         self._ml_model = ml_model.to(self._device)
