@@ -69,6 +69,29 @@ class MilvusConnector:
         """
         return utility.has_collection(collection_name)
 
+    def remove_collection(self, collection_name: str) -> bool:
+        """
+        Removes a collection from Milvus.
+    
+        Args:
+            collection_name (str): Name of the collection to remove.
+    
+        Returns:
+            bool: True if the collection was successfully removed, False otherwise.
+        """
+        try:
+            if utility.has_collection(collection_name):
+                utility.drop_collection(collection_name)
+                self._logger.info(f"Collection '{collection_name}' removed successfully.")
+                return True
+            else:
+                self._logger.warning(f"Collection '{collection_name}' does not exist.")
+                return False
+        except Exception as e:
+            self._logger.error(f"Error removing collection '{collection_name}': {e}")
+            return False
+    
+
     def create_collection(self, collection_name: str, fields: List[Any], remove_if_exists: bool = True) -> None:
         """
         Creates a collection in Milvus with the specified schema.

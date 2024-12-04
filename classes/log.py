@@ -1,6 +1,8 @@
 import os
 import yaml
 import logging
+import logging.config
+
 
 FILE_PATH = os.path.dirname(os.path.abspath(__file__))
 
