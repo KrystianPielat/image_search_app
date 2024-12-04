@@ -1,0 +1,62 @@
+version: 1
+disable_existing_loggers: false
+formatters:
+  simple:
+    format: "%(levelname)s: %(message)s"
+  detailed:
+    format: "[%(levelname)s|%(module)s|L%(lineno)d] %(asctime)s: %(message)s"
+    datefmt: "%Y-%m-%dT%H:%M:%S%z"
+  color:
+    "()": colorlog.ColoredFormatter
+    format: "%(log_color)s%(levelname)s: %(message)s"
+    log_colors:
+      DEBUG: bold_black
+      INFO: bold_green
+      WARNING: bold_yellow
+      ERROR: bold_red
+      CRITICAL: bold_purple
+
+filters:
+  info_only:
+    "()": classes.log.InfoFilter
+
+handlers:
+  stdout:
+    class: logging.StreamHandler
+    level: DEBUG
+    formatter: color
+    stream: ext://sys.stdout
+    filters: [info_only]
+  # file:
+  #   class: logging.handlers.RotatingFileHandler
+  #   level: INFO
+  #   formatter: detailed
+  #   filename: log.log
+  #   maxBytes: 1000000
+  #   backupCount: 3
+  stderr:
+    class: logging.StreamHandler
+    level: WARNING
+    formatter: color
+    stream: ext://sys.stderr
+
+loggers:
+  root:
+    level: DEBUG
+    # handlers:
+    #   - file
+
+  MilvusConnector:
+    level: INFO
+    handlers:
+      - stdout
+      - stderr
+    propagate: false
+    
+  classes.utils:
+    level: INFO
+    handlers:
+      - stdout
+      - stderr
+    propagate: false
+    
