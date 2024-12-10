@@ -257,6 +257,7 @@ class MilvusConnector:
             (getattr(hit.entity, output_field), hit.distance)
             for hit in results[0]
         ]
+    
 
     def query(
         self, collection_name: str, expr: str, output_fields: List[str], offset: int = 0, limit: int = None

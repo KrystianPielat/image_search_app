@@ -5,22 +5,6 @@ from tqdm.autonotebook import tqdm
 from torch import Tensor
 from typing import List, Union, Optional, Literal
 
-
-def normalize_embeddings(q: Tensor) -> Tensor:
-    """
-    Normalizes the given tensor along the specified dimension.
-
-    Args:
-        q (Tensor): The tensor to normalize.
-
-    Returns:
-        Tensor: The normalized tensor.
-    """
-    qn = torch.norm(q, p=2, dim=0).detach()
-    q = q.div(qn.expand_as(q))
-    return q
-
-
 class Embedder:
     """
     A utility class for embedding images and sentences using pre-trained
@@ -58,24 +42,25 @@ class Embedder:
     ) -> Tensor:
         """
         Embeds images using the base SentenceTransformer model.
-
+    
         Args:
             images (Union[List[object], object]): A single image or a list of images to embed.
             batch_size (int, optional): The batch size for embedding. Defaults to 8.
             show_progress_bar (bool, optional): Whether to display a progress bar. Defaults to False.
-
+    
         Returns:
-            Tensor: The embeddings for the images.
+            Tensor: The normalized embeddings for the images.
         """
         if not isinstance(images, list):
             images = [images]
-        return self._base_model.encode(
+        embeddings = self._base_model.encode(
             images,
             batch_size=batch_size,
             convert_to_tensor=True,
             show_progress_bar=show_progress_bar,
             device=self._device,
         ).to(self._device)
+        return torch.nn.functional.normalize(embeddings, p=2, dim=1)
 
     def embed_sentences(
         self, 
@@ -85,22 +70,22 @@ class Embedder:
     ) -> Tensor:
         """
         Embeds sentences using the multilingual SentenceTransformer model.
-
+    
         Args:
             sentences (Union[List[str], str]): A single sentence or a list of sentences to embed.
             batch_size (int, optional): The batch size for embedding. Defaults to 8.
             show_progress_bar (bool, optional): Whether to display a progress bar. Defaults to False.
-
+    
         Returns:
-            Tensor: The embeddings for the sentences.
+            Tensor: The normalized embeddings for the sentences.
         """
         if not isinstance(sentences, list):
             sentences = [sentences]
-        emb = self._ml_model.encode(
+        embeddings = self._ml_model.encode(
             sentences,
             batch_size=batch_size,
             convert_to_tensor=True,
             show_progress_bar=show_progress_bar,
             device=self._device,
         ).to(self._device)
-        return emb
+        return torch.nn.functional.normalize(embeddings, p=2, dim=1)
