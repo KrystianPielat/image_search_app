@@ -10,6 +10,7 @@ from classes.milvus_connector import MilvusConnector
 from classes.utils import display_results, load_or_save_model
 from classes.config_loader import config
 from pymilvus import FieldSchema, DataType
+from pymilvus.exceptions import MilvusException
 
 if 'last_input_time' not in st.session_state:
     st.session_state.last_input_time = time.time()
@@ -25,6 +26,17 @@ def load_embedder():
     )
     return Embedder(base_model=clip, ml_model=clip_ml)
 
+def connect_with_retry(retries=3, delay=5):
+    for attempt in range(retries):
+        try:
+            return MilvusConnector(host=config.MILVUS_HOST, port=config.MILVUS_PORT)
+        except MilvusException as e:
+            if attempt < retries - 1:
+                st.warning(f"Failed to connect to Milvus. Retrying in {delay} seconds...")
+                time.sleep(delay)
+            else:
+                st.error("Failed to connect to Milvus after multiple attempts.")
+                raise e
 
 def embed_existing_images(connector: Optional[MilvusConnector] = None): 
     st.warning("Adding images from the folder to the collection...")
@@ -45,7 +57,7 @@ def embed_existing_images(connector: Optional[MilvusConnector] = None):
     if connector:
         connector.insert(batch, collection_name='images')
     else:
-        with MilvusConnector(host=config.MILVUS_HOST, port=config.MILVUS_PORT) as connector:
+        with connect_with_retry() as connector:
             connector.insert(batch, collection_name='images')
     st.success("Images added successfully!")
 
@@ -56,7 +68,7 @@ def ensure_collection_exists():
         FieldSchema(name='path', dtype=DataType.VARCHAR, max_length=200),
         FieldSchema(name='embedding', dtype=DataType.FLOAT_VECTOR, dim=512)
     ]
-    with MilvusConnector(host=config.MILVUS_HOST, port=config.MILVUS_PORT) as connector:
+    with connect_with_retry() as connector:
         if not connector.check_if_collection_exists(config.IMAGES_COLLECTION_NAME):
             st.warning("Image collection not found. Creating the collection...")
             connector.create_collection(config.IMAGES_COLLECTION_NAME, img_fields, remove_if_exists=False)
@@ -70,7 +82,7 @@ def clear_collection():
     FieldSchema(name='embedding', dtype=DataType.FLOAT_VECTOR, dim=512)
     ]
 
-    with MilvusConnector(host=config.MILVUS_HOST, port=config.MILVUS_PORT) as connector:
+    with connect_with_retry() as connector:
         connector.create_collection(config.IMAGES_COLLECTION_NAME, img_fields, remove_if_exists=True)
 
 def delete_images_folder(folder_path="images"):
@@ -108,7 +120,7 @@ if navbar == "Search engine":
     query = st.text_input("Enter a text query to search for images:")
     if time.time() - st.session_state.last_input_time > 1 and not st.session_state.search_triggered:
         if query:
-            with MilvusConnector(host=config.MILVUS_HOST, port=config.MILVUS_PORT) as connector:
+            with connect_with_retry() as connector:
                 results = connector.search_threshold(
                     embedder.embed_sentences(query),
                     output_field='path',
@@ -146,7 +158,7 @@ if navbar == "Search engine":
             use_container_width=True
         )
 
-        with MilvusConnector(host=config.MILVUS_HOST, port=config.MILVUS_PORT) as connector:
+        with connect_with_retry() as connector:
             embeddings = embedder.embed_images(image)
             results = connector.search_threshold(
                 embeddings,
@@ -204,7 +216,7 @@ elif navbar == "Populate Database":
                         failures += 1
                 
                 try:
-                    with MilvusConnector(host=config.MILVUS_HOST, port=config.MILVUS_PORT) as connector:
+                    with connect_with_retry() as connector:
                         batch_data = [{'path': path, 'embedding': embedding} for path, embedding in zip(paths, embeddings)]
                         connector.insert(batch_data, collection_name=config.IMAGES_COLLECTION_NAME)
                     

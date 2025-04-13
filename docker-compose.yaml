@@ -64,6 +64,11 @@ services:
       - "minio"
     networks:
       - internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:19530"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 networks:
   internal:
