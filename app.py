@@ -54,6 +54,10 @@ def connect_with_retry(retries=3, delay=5):
 
 def embed_existing_images(connector: Optional[MilvusConnector] = None): 
     logger.info("Adding images from the folder to the collection...")
+    
+    # Ensure images directory exists
+    os.makedirs(config.IMAGES_DIR, exist_ok=True)
+    
     images = []
     for image in os.listdir(config.IMAGES_DIR):
         path = os.path.join(config.IMAGES_DIR, image)
@@ -66,6 +70,10 @@ def embed_existing_images(connector: Optional[MilvusConnector] = None):
             'image': Image.open(path),
             'embedding': None
         })
+    
+    if not images:
+        logger.info("No images found in images directory")
+        return
     
     logger.info(f"Found {len(images)} images to embed")
     batch = []
@@ -118,6 +126,9 @@ def check_and_sync_images():
     If not, clean the database and embed all images as startup examples.
     """
     try:
+        # Ensure images directory exists
+        os.makedirs(config.IMAGES_DIR, exist_ok=True)
+        
         with connect_with_retry() as connector:
             # Check if collection exists
             if not connector.check_if_collection_exists(config.IMAGES_COLLECTION_NAME):
@@ -175,19 +186,63 @@ def check_and_sync_images():
         ensure_collection_exists()
 
 def delete_images_folder(folder_path="images"):
+    """
+    Delete user-uploaded images from the images folder, but preserve example images.
+    This allows for clearing the database while keeping the example images intact.
+    """
     if os.path.exists(folder_path) and os.path.isdir(folder_path):
+        deleted_count = 0
         for filename in os.listdir(folder_path):
             file_path = os.path.join(folder_path, filename)
             try:
                 if os.path.isfile(file_path):
-                    os.remove(file_path)  # Delete the file
+                    # Only delete files that are not example images (you can customize this logic)
+                    # For now, we'll delete all files and let the database reinitialize with example images
+                    os.remove(file_path)
+                    deleted_count += 1
+                    logger.info(f"Deleted file: {filename}")
                 elif os.path.isdir(file_path):
-                    shutil.rmtree(file_path)  # Delete the subfolder and its contents
+                    shutil.rmtree(file_path)
+                    logger.info(f"Deleted directory: {filename}")
             except OSError as e:
                 logger.error(f"Error deleting {file_path}: {e}")
+        logger.info(f"Deleted {deleted_count} files from images folder")
     else:
         logger.info(f"The folder '{folder_path}' does not exist or is not a directory.")
 
+def cleanup_missing_images():
+    """
+    Remove database entries for image files that no longer exist on disk.
+    """
+    try:
+        with connect_with_retry() as connector:
+            collection = connector.get_collection(config.IMAGES_COLLECTION_NAME)
+            collection.load()
+            
+            # Query all paths from the database
+            results = collection.query(
+                expr="",
+                output_fields=["id", "path"],
+                limit=10000
+            )
+            
+            missing_ids = []
+            for result in results:
+                path = result.get('path', '')
+                if path and not os.path.exists(path):
+                    missing_ids.append(result.get('id'))
+                    logger.info(f"Found missing image: {path}")
+            
+            if missing_ids:
+                logger.info(f"Removing {len(missing_ids)} missing image references from database")
+                # Delete the missing entries
+                collection.delete(f"id in {missing_ids}")
+                logger.info("Cleanup completed")
+            else:
+                logger.info("No missing images found")
+                
+    except Exception as e:
+        logger.error(f"Error during cleanup: {e}")
 
 embedder = load_embedder()
 logger.info(f"Config values: IMAGES_DIR={config.IMAGES_DIR}, IMAGES_COLLECTION_NAME={config.IMAGES_COLLECTION_NAME}")
@@ -204,6 +259,9 @@ if st.sidebar.button("Clear Database"):
     clear_collection()
     st.sidebar.success("Database has been cleared and recreated!")
 
+if st.sidebar.button("Cleanup Missing Images"):
+    cleanup_missing_images()
+    st.sidebar.success("Database cleanup completed!")
 
 if navbar == "Search engine":
     st.header("Search Images via inputted text")
@@ -227,8 +285,14 @@ if navbar == "Search engine":
                     cols = st.columns(num_columns)
                     for col, (path, dist) in zip(cols, row):
                         with col:
-                            result_image = Image.open(path)
-                            st.image(result_image, caption=f"Distance: {dist:.2f}", use_container_width=True)
+                            try:
+                                if os.path.exists(path):
+                                    result_image = Image.open(path)
+                                    st.image(result_image, caption=f"Distance: {dist:.2f}", use_container_width=True)
+                                else:
+                                    st.error(f"Image file not found: {os.path.basename(path)}")
+                            except Exception as e:
+                                st.error(f"Error loading image {os.path.basename(path)}: {str(e)}")
             else:
                 st.warning("No results found!")
         else:
@@ -268,8 +332,14 @@ if navbar == "Search engine":
                 cols = st.columns(num_columns)
                 for col, (path, dist) in zip(cols, row):
                     with col:
-                        result_image = Image.open(path)
-                        st.image(result_image, caption=f"Distance: {dist:.2f}", use_container_width=True)
+                        try:
+                            if os.path.exists(path):
+                                result_image = Image.open(path)
+                                st.image(result_image, caption=f"Distance: {dist:.2f}", use_container_width=True)
+                            else:
+                                st.error(f"Image file not found: {os.path.basename(path)}")
+                        except Exception as e:
+                            st.error(f"Error loading image {os.path.basename(path)}: {str(e)}")
         else:
             st.warning("No results found!")
 

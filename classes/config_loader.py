@@ -17,6 +17,7 @@ class ConfigLoader:
     IMAGES_COLLECTION_NAME: Optional[str] = field(default=None, metadata={"env": "IMAGES_COLLECTION_NAME"})
     MILVUS_HOST: Optional[str] = field(default='localhost', metadata={"env": "MILVUS_HOST"})
     MILVUS_PORT: Optional[str] = field(default=19530, metadata={"env": "MILVUS_PORT"})
+    BASE_PATH: Optional[str] = field(default='', metadata={"env": "BASE_PATH"})
     
     def __post_init__(self):
         """

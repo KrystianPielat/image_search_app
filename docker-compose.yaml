@@ -8,12 +8,9 @@ services:
     environment:
       - MILVUS_HOST=standalone
       - MILVUS_PORT=19530
+      - BASE_PATH=${BASE_PATH:-}
     depends_on:
       - "standalone"
-    volumes:
-      - ./models:/app/models
-      - ./classes:/app/classes
-      - ./app.py:/app/app.py
     networks:
       - internal
       

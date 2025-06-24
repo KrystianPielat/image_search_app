@@ -14,8 +14,11 @@ COPY . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev
 
+# Copy example images to the images directory
+RUN mkdir -p /app/images && cp -r /app/example_images/* /app/images/
+
 ENV PATH="/app/.venv/bin:$PATH"
 
 ENTRYPOINT []
 
-CMD ["uv", "run", "streamlit", "run", "app.py", "--server.enableCORS=false", "--server.port=8501"]
+CMD ["sh", "-c", "uv run streamlit run app.py --server.enableCORS=false --server.port=8501 --server.baseUrlPath=${BASE_PATH:-}"]
