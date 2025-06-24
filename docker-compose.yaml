@@ -35,9 +35,9 @@ services:
     environment:
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
-    ports:
-      - "9001:9001"
-      - "9000:9000"
+    # ports:
+    #   - "9001:9001"
+    #   - "9000:9000"
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/minio:/minio_data
     command: minio server /minio_data --console-address ":9001"
@@ -55,17 +55,17 @@ services:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/milvus:/var/lib/milvus
     ports:
       - "19530:19530"
-      - "9091:9091"
+    #   - "9091:9091"
     depends_on:
       - "etcd"
       - "minio"
     networks:
       - internal
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:19530"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:19530"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
 
 networks:
   internal:
