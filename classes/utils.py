@@ -36,7 +36,6 @@ def display_results(results: List[Tuple[str, float]], width: int = 300, height: 
         
         display(img)
 
-
 def load_or_save_model(pickle_path: str, model_name: str):
     """
     Loads a pre-trained SentenceTransformer model from a pickle file if it exists, 
@@ -59,3 +58,4 @@ def load_or_save_model(pickle_path: str, model_name: str):
         with open(pickle_path, 'wb') as f:
             pickle.dump(model, f)
     return model
+

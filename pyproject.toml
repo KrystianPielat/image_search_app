@@ -1,0 +1,18 @@
+[project]
+name = "image-search"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "colorlog>=6.9.0",
+    "ipython>=9.3.0",
+    "pillow>=11.2.1",
+    "pymilvus>=2.5.11",
+    "python-dotenv>=1.1.1",
+    "pyyaml>=6.0.2",
+    "sentence-transformers>=4.1.0",
+    "streamlit>=1.46.0",
+    "torch>=2.7.1",
+    "tqdm>=4.67.1",
+]

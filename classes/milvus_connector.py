@@ -62,12 +62,32 @@ class MilvusConnector:
         Checks if a collection exists in Milvus.
 
         Args:
-            collection_name (str): The name of the collection.
+            collection_name (str): Name of the collection to check.
 
         Returns:
             bool: True if the collection exists, False otherwise.
         """
-        return utility.has_collection(collection_name)
+        try:
+            return utility.has_collection(collection_name)
+        except Exception as e:
+            self._logger.error(f"Error checking if collection '{collection_name}' exists: {e}")
+            return False
+
+    def get_collection(self, collection_name: str) -> Collection:
+        """
+        Gets a collection by name.
+
+        Args:
+            collection_name (str): Name of the collection to retrieve.
+
+        Returns:
+            Collection: The Milvus collection object.
+        """
+        try:
+            return Collection(name=collection_name)
+        except Exception as e:
+            self._logger.error(f"Error getting collection '{collection_name}': {e}")
+            raise e
 
     def remove_collection(self, collection_name: str) -> bool:
         """

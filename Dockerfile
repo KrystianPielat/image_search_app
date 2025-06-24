@@ -1,15 +1,21 @@
-FROM python:3.9-slim
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
 
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
-
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY . /app
 WORKDIR /app
 
-EXPOSE 8501
+ENV UV_COMPILE_BYTECODE=1
+ENV UV_LINK_MODE=copy
 
-CMD ["streamlit", "run", "app.py", "--server.enableCORS=false", "--server.port=8501"]
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv sync --locked --no-install-project --no-dev
+
+COPY . /app
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --locked --no-dev
+
+ENV PATH="/app/.venv/bin:$PATH"
+
+ENTRYPOINT []
+
+CMD ["uv", "run", "streamlit", "run", "app.py", "--server.enableCORS=false", "--server.port=8501"]
